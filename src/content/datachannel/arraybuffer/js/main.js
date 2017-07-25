@@ -13,6 +13,7 @@ var typeList = [Int8Array,
 var bufSize = 12;
 var sendBuf = null;
 var receiveBuf = null;
+var crypto = isIE ? window.msCrypto : window.crypto;
 
 var localConnection, remotePeerConnection, sendChannel, receiveChannel, pcConstraint, dataConstraint;
 var sctpSelect = document.querySelector('input#useSctp');
@@ -114,8 +115,7 @@ function startSending() {
 function sendData() {
   // create a new buffer
   sendBuf = new typeList[sendCounter](bufSize);
-  for (var i = 0; i < bufSize; i++) 
-    sendBuf[i] = (Math.random() * 100);
+  crypto.getRandomValues(sendBuf);
 
   // log the value
   console.log('send: ');
