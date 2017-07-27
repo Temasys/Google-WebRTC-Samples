@@ -122,7 +122,7 @@ function sendData() {
   console.log(sendBuf);
 
   // send the buffer
-  sendChannel.send(sendBuf);
+  sendChannel.send(sendBuf, typeList[sendCounter].name);
 }
 
 function closeDataChannels() {
@@ -190,7 +190,8 @@ function receiveChannelCallback(event) {
 
 function onReceiveMessageCallback(event) {
   // parse received data
-  receiveBuf = new typeList[sendCounter](event.data);
+  var tmp = new Int8Array(event.data);
+  receiveBuf = new typeList[sendCounter](tmp.buffer);
   console.log('received: ');
   console.log(receiveBuf);
 
