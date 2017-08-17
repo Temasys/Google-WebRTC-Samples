@@ -115,7 +115,7 @@ function sendData() {
           }
           return;
         }
-        sendChannel.send(packet);
+        sendChannel.send(packet, Int8Array.toString().match(/function\s*([^\s(]+)/)[1]);
         if (file.size > offset + e.target.result.byteLength) {
           window.setTimeout(sliceFile, 0, offset + chunkSize);
         }

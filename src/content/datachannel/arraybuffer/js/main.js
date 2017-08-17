@@ -13,7 +13,7 @@ var typeList = [Int8Array,
 var bufSize = 12;
 var sendBuf = null;
 var receiveBuf = null;
-var crypto = isIE ? window.msCrypto : window.crypto;
+var crypto = typeof window.msCrypto !== 'undefined' ? window.msCrypto : window.crypto;
 
 var localConnection, remotePeerConnection, sendChannel, receiveChannel, pcConstraint, dataConstraint;
 var sctpSelect = document.querySelector('input#useSctp');
@@ -122,7 +122,7 @@ function sendData() {
   console.log(sendBuf);
 
   // send the buffer
-  sendChannel.send(sendBuf, typeList[sendCounter].name);
+  sendChannel.send(sendBuf, typeList[sendCounter].toString().match(/function\s*([^\s(]+)/)[1]);
 }
 
 function closeDataChannels() {
@@ -183,6 +183,7 @@ function onAddIceCandidateError(error) {
 function receiveChannelCallback(event) {
   console.log('Receive Channel Callback');
   receiveChannel = event.channel;
+  receiveChannel.binaryType = 'arraybuffer'; // firefox defaults to blob
   receiveChannel.onmessage = onReceiveMessageCallback;
   receiveChannel.onopen = onReceiveChannelStateChange;
   receiveChannel.onclose = onReceiveChannelStateChange;
