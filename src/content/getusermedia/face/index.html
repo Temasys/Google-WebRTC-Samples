@@ -81,12 +81,25 @@ poll = function() {
   canvas.width  = w;
   canvas.height = h;
 
-  var base64 = localVideo.getFrame();
-  var image = new Image();
-  image.onload = function () {
-    canvas.getContext("2d").
-    drawImage(image, 0, 0, canvas.width, canvas.height);
+  if (webrtcDetectedType === 'plugin') {
+    var base64 = localVideo.getFrame();
+    var image = new Image();
+    image.onload = function () {
+      canvas.getContext('2d').
+        drawImage(image, 0, 0, canvas.width, canvas.height);
+      drewCanvas(canvas);
+    };
+    image.setAttribute('src', 'data:image/png;base64,' + base64);
+  } else {
+    canvas.width = localVideo.videoWidth;
+    canvas.height = localVideo.videoHeight;
+    canvas.getContext('2d').
+      drawImage(localVideo, 0, 0, canvas.width, canvas.height);
+    drewCanvas(canvas);
+  }
+};
 
+drewCanvas = function(canvas) {
     // var ctx = canvas.getContext('2d');
     // ctx.drawImage(localVideo, 0, 0, w, h);
     var comp = ccv.detect_objects({ "canvas" : ccv.grayscale(canvas),
@@ -132,9 +145,6 @@ poll = function() {
     }
     setTimeout(poll, 1000);
   };
-  image.setAttribute("src", "data:image/png;base64," + base64);
-};
-
 
 onGotStream = function(stream) {
   // localVideo.style.opacity = 1;

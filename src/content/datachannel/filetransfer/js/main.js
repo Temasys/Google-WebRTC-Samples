@@ -11,6 +11,8 @@ var remoteConnection;
 var sendChannel;
 var receiveChannel;
 var pcConstraint;
+var stream;
+var sending = false;
 var bitrateDiv = document.querySelector('div#bitrate');
 var fileInput = document.querySelector('input#fileInput');
 var downloadAnchor = document.querySelector('a#download');
@@ -38,6 +40,7 @@ function createConnection() {
   // from the browser console.
   window.localConnection = localConnection = new RTCPeerConnection(servers,
       pcConstraint);
+  if (webrtcDetectedType === 'AppleWebKit') localConnection.addStream(stream);
   trace('Created local peer connection object localConnection');
 
   sendChannel = localConnection.createDataChannel('sendDataChannel', {ordered: true});
@@ -95,10 +98,12 @@ function sendData() {
           return;
         }
         sendChannel.send(packet);
+        sendProgress.value = offset + e.target.result.byteLength;
         if (file.size > offset + e.target.result.byteLength) {
           window.setTimeout(sliceFile, 0, offset + chunkSize);
+        } else {
+          sending = false;
         }
-        sendProgress.value = offset + e.target.result.byteLength;
       };
     })(file);
     var slice = file.slice(offset, offset + chunkSize);
@@ -236,11 +241,14 @@ function onReceiveChannelStateChange() {
     timestampPrev = timestampStart;
     statsInterval = window.setInterval(displayStats, 500);
   }
+  trySending();
 }
 
 function trySending() {
   if (sendChannel && sendChannel.readyState === 'open' &&
-    receiveChannel && receiveChannel.readyState === 'open') {
+    receiveChannel && receiveChannel.readyState === 'open'
+    && !sending) {
+    sending = true;
     sendData();
   }  
 }
@@ -277,3 +285,20 @@ function displayStats() {
     }, function(e) {console.log('GetStats failure ', e);});
   }
 }
+
+if (webrtcDetectedType === 'AppleWebKit') {
+  var onSuccess = function(s) {
+    stream = s;
+    console.log('gum success');
+  };
+  var onFailure = function(error) {
+    console.log('gum failure');
+  };
+  var constraints = window.constraints = {
+    audio: false,
+    video: true
+  };
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(onSuccess).catch(onFailure);
+}
+

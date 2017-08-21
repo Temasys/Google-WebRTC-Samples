@@ -26,6 +26,7 @@ removeButton.onclick = removeServer;
 var begin;
 var pc;
 var candidates;
+var stream = null;
 
 function selectServer(event) {
   var option = event.target;
@@ -103,6 +104,7 @@ function start() {
   trace('Creating new PeerConnection with config=' + JSON.stringify(config) +
         ', constraints=' + JSON.stringify(pcConstraints));
   pc = new RTCPeerConnection(config, pcConstraints);
+  if (webrtcDetectedType === 'AppleWebKit') pc.addStream(stream); // Native Safari won't gather ice candidates without gUM success
   pc.onicecandidate = iceCallback;
   pc.createOffer(gotDescription, noDescription, offerOptions);
 }
@@ -216,3 +218,20 @@ function iceCallback(event) {
   }
   candidateTBody.appendChild(row);
 }
+
+if (webrtcDetectedType === 'AppleWebKit') {
+  var onSuccess = function(s) {
+    stream = s;
+    console.log('gum success');
+  };
+  var onFailure = function(error) {
+    console.log('gum failure');
+  };
+  var constraints = window.constraints = {
+    audio: false,
+    video: true
+  };
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(onSuccess).catch(onFailure);
+}
+

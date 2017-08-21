@@ -14,6 +14,7 @@ var sendChannel;
 var receiveChannel;
 var pcConstraint;
 var dataConstraint;
+var stream;
 var dataChannelSend = document.querySelector('textarea#dataChannelSend');
 var dataChannelReceive = document.querySelector('textarea#dataChannelReceive');
 var startButton = document.querySelector('button#startButton');
@@ -45,17 +46,16 @@ function createConnection() {
   // from the browser console.
   window.localConnection = localConnection =
       new RTCPeerConnection(servers, pcConstraint);
+  if (webrtcDetectedType === 'AppleWebKit') localConnection.addStream(stream);
   trace('Created local peer connection object localConnection');
 
-  sendChannel = localConnection.createDataChannel('sendDataChannel',
-      dataConstraint);
+  sendChannel = localConnection.createDataChannel('sendDataChannel', dataConstraint);
   trace('Created send data channel');
 
   if (sendChannel.readyState === 'open') {
     onSendChannelStateChange();
   }
-  sendChannel.onopen = onSendChannelStateChange;
-  localConnection.onicecandidate = iceCallback1;
+  sendChannel.onopen  = onSendChannelStateChange;
   sendChannel.onclose = onSendChannelStateChange;
 
   // Add remoteConnection to global scope to make it visible
@@ -63,6 +63,8 @@ function createConnection() {
   window.remoteConnection = remoteConnection =
       new RTCPeerConnection(servers, pcConstraint);
   trace('Created remote peer connection object remoteConnection');
+
+  localConnection.onicecandidate = iceCallback1;
 
   remoteConnection.onicecandidate = iceCallback2;
   remoteConnection.ondatachannel = receiveChannelCallback;
@@ -177,4 +179,20 @@ function onSendChannelStateChange() {
 function onReceiveChannelStateChange() {
   var readyState = receiveChannel.readyState;
   trace('Receive channel state is: ' + readyState);
+}
+
+if (webrtcDetectedType === 'AppleWebKit') {
+  var onSuccess = function(s) {
+    stream = s;
+    console.log('gum success');
+  };
+  var onFailure = function(error) {
+    console.log('gum failure');
+  };
+  var constraints = window.constraints = {
+    audio: false,
+    video: true
+  };
+  // navigator.mediaDevices.getUserMedia(constraints)
+  //   .then(onSuccess).catch(onFailure);
 }
