@@ -13,9 +13,10 @@ var typeList = [Int8Array,
 var bufSize = 12;
 var sendBuf = null;
 var receiveBuf = null;
-var crypto = isIE ? window.msCrypto : window.crypto;
+var crypto = AdapterJS.webrtcDetectedBrowser === 'IE' ? window.msCrypto : window.crypto;
 
 var localConnection, remotePeerConnection, sendChannel, receiveChannel, pcConstraint, dataConstraint;
+var stream;
 var sctpSelect = document.querySelector('input#useSctp');
 var rtpSelect = document.querySelector('input#useRtp');
 var startButton = document.querySelector('button#startButton');
@@ -69,6 +70,7 @@ function createConnection() {
     }
   }
   localConnection = new RTCPeerConnection(servers, pcConstraint);
+  if (webrtcDetectedType === 'AppleWebKit') localConnection.addStream(stream);
   console.log('Created local peer connection object localConnection');
 
   try {
@@ -277,4 +279,19 @@ function onReceiveChannelStateChange() {
   console.log('Receive channel state is: ' + readyState);
 }
 
+if (webrtcDetectedType === 'AppleWebKit') {
+  var onSuccess = function(s) {
+    stream = s;
+    console.log('gum success');
+  };
+  var onFailure = function(error) {
+    console.log('gum failure');
+  };
+  var constraints = window.constraints = {
+    audio: false,
+    video: true
+  };
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(onSuccess).catch(onFailure);
+}
 

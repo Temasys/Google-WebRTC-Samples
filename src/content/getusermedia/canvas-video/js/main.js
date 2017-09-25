@@ -24,13 +24,20 @@ function successCallback(stream) {
   window.stream = stream; // make stream available to browser console
   video = attachMediaStream(video, stream); 
   setInterval(function() {
-    var base64 = video.getFrame();
-    var image = new Image();
-    image.onload = function () {
+    if (webrtcDetectedType === 'plugin') {
+      var base64 = video.getFrame();
+      var image = new Image();
+      image.onload = function () {
         canvas.getContext('2d').
-        drawImage(image, 0, 0, canvas.width, canvas.height);
-    };
-    image.setAttribute('src', 'data:image/png;base64,' + base64);
+          drawImage(image, 0, 0, canvas.width, canvas.height);
+      };
+      image.setAttribute('src', 'data:image/png;base64,' + base64);
+    } else {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').
+        drawImage(video, 0, 0, canvas.width, canvas.height);
+    }
   }, 1000/FPS);
 }
 

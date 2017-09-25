@@ -11,6 +11,8 @@ var remoteConnection;
 var sendChannel;
 var receiveChannel;
 var pcConstraint;
+var stream;
+var sending = false;
 var megsToSend = document.querySelector('input#megsToSend');
 var sendButton = document.querySelector('button#sendTheData');
 var orderedCheckbox = document.querySelector('input#ordered');
@@ -49,6 +51,7 @@ function createConnection() {
   // from the browser console.
   window.localConnection = localConnection = new RTCPeerConnection(servers,
       pcConstraint);
+  if (webrtcDetectedType === 'AppleWebKit') localConnection.addStream(stream);
   trace('Created local peer connection object localConnection');
 
   var dataChannelParams = {
@@ -198,6 +201,8 @@ function receiveChannelCallback(event) {
   receiveChannel = event.channel;
   receiveChannel.binaryType = 'arraybuffer';
   receiveChannel.onmessage = onReceiveMessageCallback;
+  receiveChannel.onopen = onReceiveChannelStateChange;
+  receiveChannel.onclose = onReceiveChannelStateChange;
 
   tryStartSending();
 }
@@ -211,6 +216,7 @@ function onReceiveMessageCallback(event) {
     closeDataChannels();
     sendButton.disabled = false;
     megsToSend.disabled = false;
+    sending = false;
   }
 }
 
@@ -220,9 +226,33 @@ function onSendChannelStateChange() {
   tryStartSending();
 }
 
+function onReceiveChannelStateChange() {
+  trace('Receive channel state is: ' + receiveChannel.readyState);
+  tryStartSending();
+}
+
 function tryStartSending() {
   if (sendChannel && sendChannel.readyState === 'open' &&
-    receiveChannel && receiveChannel.readyState === 'open') {
+    receiveChannel && receiveChannel.readyState === 'open'
+    && !sending) {
+    sending = true;
     sendGeneratedData();
   }
 }
+
+if (webrtcDetectedType === 'AppleWebKit') {
+  var onSuccess = function(s) {
+    stream = s;
+    console.log('gum success');
+  };
+  var onFailure = function(error) {
+    console.log('gum failure');
+  };
+  var constraints = window.constraints = {
+    audio: false,
+    video: true
+  };
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(onSuccess).catch(onFailure);
+}
+
