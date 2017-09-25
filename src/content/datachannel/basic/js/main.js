@@ -193,6 +193,6 @@ if (webrtcDetectedType === 'AppleWebKit') {
     audio: false,
     video: true
   };
-  // navigator.mediaDevices.getUserMedia(constraints)
-  //   .then(onSuccess).catch(onFailure);
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(onSuccess).catch(onFailure);
 }

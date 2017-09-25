@@ -13,7 +13,7 @@ var typeList = [Int8Array,
 var bufSize = 12;
 var sendBuf = null;
 var receiveBuf = null;
-var crypto = isIE ? window.msCrypto : window.crypto;
+var crypto = AdapterJS.webrtcDetectedBrowser === 'IE' ? window.msCrypto : window.crypto;
 
 var localConnection, remotePeerConnection, sendChannel, receiveChannel, pcConstraint, dataConstraint;
 var stream;
