@@ -16,6 +16,7 @@ var constraints = window.constraints = {
     mediaSource: 'screen'
   }
 };
+var restartBtn = document.querySelector('#restartBtn');
 var errorElement = document.querySelector('#errorMsg');
 
 var onSuccess = function(stream) {
@@ -41,12 +42,14 @@ var onFailure = function(error) {
   errorMsg('getUserMedia error: ' + error.name, error);
 };
 
-if (typeof Promise === 'undefined') {
+function start() {
   navigator.getUserMedia(constraints, onSuccess, onFailure);
-} else {
-  navigator.mediaDevices.getUserMedia(constraints)
-  .then(onSuccess).catch(onFailure);
-}
+};
+
+function restart() {
+  stream.stop();
+  start();
+};
 
 function errorMsg(msg, error) {
   errorElement.innerHTML += '<p>' + msg + '</p>';
@@ -54,3 +57,8 @@ function errorMsg(msg, error) {
     console.error(error);
   }
 }
+
+restartBtn.onclick = restart;
+AdapterJS.webRTCReady(function() {
+  start();
+});

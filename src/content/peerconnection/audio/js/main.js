@@ -85,7 +85,7 @@ function call() {
 
   var constraints = {
     audio: true,
-    video: true
+    video: false
   };
   if (typeof Promise === 'undefined') {
     navigator.getUserMedia(constraints, gotStream, gumFailed);

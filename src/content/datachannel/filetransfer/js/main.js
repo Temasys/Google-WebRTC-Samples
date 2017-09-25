@@ -83,15 +83,36 @@ function sendData() {
   sendProgress.max = file.size;
   receiveProgress.max = file.size;
   fileType = file.type.length > 0 ? file.type : 'text/plain';
-  var chunkSize = 512 * 32;
+  var chunkSize = 16384;
   var bufferFullThreshold = 5 * chunkSize;
+  var usePolling = true;
+  if (typeof sendChannel.bufferedAmountLowThreshold === 'number') {
+    trace('Using the bufferedamountlow event for flow control');
+    usePolling = false;
+
+    // Reduce the buffer fullness threshold, since we now have more efficient
+    // buffer management.
+    bufferFullThreshold = chunkSize / 2;
+
+    // This is "overcontrol": our high and low thresholds are the same.
+    sendChannel.bufferedAmountLowThreshold = bufferFullThreshold;
+  }
+  // Listen for one bufferedamountlow event.
+  var listener = function() {
+    sendChannel.removeEventListener('bufferedamountlow', listener);
+    sliceFile(offset);
+  };
   var sliceFile = function(offset) {
     var reader = new window.FileReader();
     reader.onload = (function() {
       return function(e) {
         var packet = new Int8Array(e.target.result, 0, e.target.result.byteLength);
         if (sendChannel.bufferedAmount > bufferFullThreshold) {
-          setTimeout(sliceFile, 150, offset);
+          if (usePolling) {
+            setTimeout(sliceFile, 150, offset);
+          } else {
+            sendChannel.addEventListener('bufferedamountlow', listener);
+          }
           return;
         }
         sendChannel.send(packet);

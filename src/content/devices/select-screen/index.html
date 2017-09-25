@@ -20,7 +20,7 @@
 
   <base target="_blank">
 
-  <title>Select audio and video sources</title>
+  <title>Choose shared screen/window</title>
 
   <link rel="icon" sizes="192x192" href="../../../images/webrtc-icon-192x192.png">
   <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
@@ -38,6 +38,21 @@
       width: 12em;
       display: inline-block;
     }
+    .alert-box {
+      color:#555;
+      border-radius:10px;
+      font-family:Tahoma,Geneva,Arial,sans-serif;font-size:11px;
+      padding:10px 10px 10px 36px;
+      margin:10px;
+    }
+    .alert-box span {
+      font-weight:bold;
+      text-transform:uppercase;
+    }
+    .warning {
+        background:#fff8c4 url('../images/warning.png') no-repeat 10px 50%;
+        border:1px solid #f2c779;
+    }
   </style>
 
 </head>
@@ -45,20 +60,15 @@
 <body>
   <div id="container">
 
-    <h1><a href="//github.com/Temasys/Google-WebRTC-Samples" title="WebRTC samples homepage">WebRTC samples</a><span>Select sources &amp; outputs</span></h1>
+    <h1><a href="//github.com/Temasys/Google-WebRTC-Samples" title="WebRTC samples homepage">WebRTC samples</a><span>Select shared screen/window</span></h1>
+
+    <div class="alert-box warning">
+      <span>warning: </span>This sample is only supported by the Temasys plugin, on Internet Explorer and Safari.
+    </div>
 
     <p>Get available audio, video sources and audio output devices<b>*</b> from <code>mediaDevices.enumerateDevices()</code> then set the source for <code>getUserMedia()</code> using a <code>deviceId</code> constraint.</p>
 
     <p class="small"><b>*</b>Enable experimental support in <b>Chrome 45.0.2441.x</b> or later by selecting <b>Enable experimental Web Platform features</b> in <b>chrome://flags</b> or by using command line flag "<b>--enable-blink-features=EnumerateDevices,AudioOutputDevices</b>". Use the <code>setSinkID()</code> method on the video element and provide a audio or video element and a sinkId (<code>deviceId</code> for where <code>deviceInfo.kind === 'audiooutput'</code>) as arguments. Also the web page must be served over HTTPS.</p>
-
-    <div class="select">
-      <label for="audioSource">Audio input source: </label><select id="audioSource"></select>
-    </div>
-
-    <div class="select">
-      <label for="audioOutput">Audio output destination: </label><select id="audioOutput"></select>
-    </div>
-
     <div class="select">
       <label for="videoSource">Video source: </label><select id="videoSource"></select>
     </div>

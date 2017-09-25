@@ -22,6 +22,7 @@ var receivedSize = 0;
 var bytesToSend = 0;
 var nSent = 0; 
 var nReceived = 0;
+var stringToSendRepeatedly;
 
 sendButton.onclick = createConnection;
 
@@ -98,7 +99,7 @@ function sendGeneratedData() {
   nSent = 0;
 
   var chunkSize = 16384;
-  var stringToSendRepeatedly = randomAsciiString(chunkSize);
+  stringToSendRepeatedly = randomAsciiString(chunkSize);
   var bufferFullThreshold = 5 * chunkSize;
   var usePolling = true;
   if (typeof sendChannel.bufferedAmountLowThreshold === 'number') {
