@@ -73,10 +73,17 @@ function gumFailed(e) {
 function start() {
   trace('Requesting local stream');
   startButton.disabled = true;
-  var constraints = {
+  // var constraints = {
+  //   audio: true,
+  //   video: true
+  // };
+  var constraints = window.constraints = {
     audio: true,
-    video: true
+    video: {
+      mediaSource: 'screen'
+    }
   };
+
   // if (typeof Promise === 'undefined') {
   //   navigator.getUserMedia(constraints, gotStream, gumFailed);
   // } else {
