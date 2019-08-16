@@ -43,7 +43,7 @@ var onFailure = function(error) {
 };
 
 function start() {
-  navigator.getUserMedia(constraints, onSuccess, onFailure);
+  navigator.getUserMedia(constraints).then(onSuccess).catch(onFailure);
 };
 
 function restart() {
