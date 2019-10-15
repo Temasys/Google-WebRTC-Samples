@@ -11,3 +11,4 @@ tests_output
 *.log
 *~
 \#*#
+src/content-es5

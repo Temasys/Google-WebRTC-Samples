@@ -22,10 +22,11 @@
     "test": "gulp"
   },
   "devDependencies": {
-    "babel-core": "^6.26.3",
-    "babel-plugin-add-module-exports": "^1.0.2",
-    "babel-preset-env": "^1.7.0",
-    "babel-register": "^6.26.0",
+    "@babel/core": "^7.6.4",
+    "@babel/polyfill": "^7.6.0",
+    "@babel/preset-env": "^7.6.3",
+    "babelify": "^10.0.0",
+    "browserify": "^16.5.0",
     "chromedriver": "^76.0.1",
     "eslint-config-google": "^0.14.0",
     "express": "^4.17.1",
