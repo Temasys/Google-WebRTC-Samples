@@ -12,7 +12,7 @@ HTML_FILES=`find $ES5Dir -type f \( -iname "*index.html" \)`
 for file in $HTML_FILES
 do
   echo $file
-  sed -i '' 's,src="https://webrtc.github.io/adapter/adapter-latest.js",src="../../../js/adapter.js",g' $file
+  sed -i 's,src="https://webrtc.github.io/adapter/adapter-latest.js",src="../../../js/adapter.js",g' $file
 done
 
 JS_FILES=`find $ES5Dir -type f \( -iname "*.js" \)`
