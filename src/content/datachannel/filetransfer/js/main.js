@@ -30,6 +30,8 @@ let timestampPrev = 0;
 let timestampStart;
 let statsInterval = null;
 let bitrateMax = 0;
+let fileType = '';
+let sendingData = false;
 
 sendFileButton.addEventListener('click', () => createConnection());
 fileInput.addEventListener('change', handleFileInputChange, false);
@@ -59,11 +61,12 @@ async function createConnection() {
   sendChannel.binaryType = 'arraybuffer';
   console.log('Created send data channel');
 
-  sendChannel.addEventListener('open', onSendChannelStateChange);
-  sendChannel.addEventListener('close', onSendChannelStateChange);
-  sendChannel.addEventListener('error', error => console.error('Error in sendChannel:', error));
 
-  localConnection.addEventListener('icecandidate', async event => {
+  AdapterJS.addEvent(sendChannel, 'open', onSendChannelStateChange);
+  AdapterJS.addEvent(sendChannel, 'close', onSendChannelStateChange);
+  AdapterJS.addEvent(sendChannel, 'error', error => console.error('Error in sendChannel:', error));
+
+  AdapterJS.addEvent(localConnection, 'icecandidate', async event => {
     console.log('Local ICE candidate: ', event.candidate);
     await remoteConnection.addIceCandidate(event.candidate);
   });
@@ -71,11 +74,11 @@ async function createConnection() {
   remoteConnection = new RTCPeerConnection();
   console.log('Created remote peer connection object remoteConnection');
 
-  remoteConnection.addEventListener('icecandidate', async event => {
+  AdapterJS.addEvent(remoteConnection, 'icecandidate', async event => {
     console.log('Remote ICE candidate: ', event.candidate);
     await localConnection.addIceCandidate(event.candidate);
   });
-  remoteConnection.addEventListener('datachannel', receiveChannelCallback);
+  AdapterJS.addEvent(remoteConnection, 'datachannel', receiveChannelCallback);
 
   try {
     const offer = await localConnection.createOffer();
@@ -98,8 +101,10 @@ function sendData() {
     bitrateDiv.innerHTML = '';
     statusMessage.textContent = 'File is empty, please select a non-empty file';
     closeDataChannels();
+    sendingData = false;
     return;
   }
+  fileType = file.type.length > 0 ? file.type : 'text/plain';
   sendProgress.max = file.size;
   receiveProgress.max = file.size;
   const chunkSize = 16384;
@@ -108,13 +113,15 @@ function sendData() {
   fileReader.addEventListener('error', error => console.error('Error reading file:', error));
   fileReader.addEventListener('abort', event => console.log('File reading aborted:', event));
   fileReader.addEventListener('load', e => {
-    console.log('FileRead.onload ', e);
-    sendChannel.send(e.target.result);
+    console.log('FileRead.onload ', e.target.result.byteLength);
+    const packet = new Int8Array(e.target.result, 0, e.target.result.byteLength);
+    sendChannel.send(packet);
     offset += e.target.result.byteLength;
     sendProgress.value = offset;
     if (offset < file.size) {
       readSlice(offset);
-    }
+    } else
+      sendingData = false;
   });
   const readSlice = o => {
     console.log('readSlice ', o);
@@ -162,7 +169,7 @@ async function gotRemoteDescription(desc) {
   await localConnection.setRemoteDescription(desc);
 }
 
-function receiveChannelCallback(event) {
+async function receiveChannelCallback(event) {
   console.log('Receive Channel Callback');
   receiveChannel = event.channel;
   receiveChannel.binaryType = 'arraybuffer';
@@ -178,12 +185,14 @@ function receiveChannelCallback(event) {
     URL.revokeObjectURL(downloadAnchor.href);
     downloadAnchor.removeAttribute('href');
   }
+  await checkStateAndSendData();
 }
 
 function onReceiveMessageCallback(event) {
-  console.log(`Received Message ${event.data.byteLength}`);
-  receiveBuffer.push(event.data);
-  receivedSize += event.data.byteLength;
+  const packet = new Int8Array(event.data);
+  console.log(`Received packet byteLength: ${packet.byteLength}`);
+  receiveBuffer.push(packet);
+  receivedSize += packet.byteLength;
 
   receiveProgress.value = receivedSize;
 
@@ -191,14 +200,21 @@ function onReceiveMessageCallback(event) {
   // about the expected file size (and name, hash, etc).
   const file = fileInput.files[0];
   if (receivedSize === file.size) {
-    const received = new Blob(receiveBuffer);
+    const received = new Blob(receiveBuffer, {type: fileType});
     receiveBuffer = [];
 
-    downloadAnchor.href = URL.createObjectURL(received);
     downloadAnchor.download = file.name;
     downloadAnchor.textContent =
       `Click to download '${file.name}' (${file.size} bytes)`;
     downloadAnchor.style.display = 'block';
+    // IE doesn't allow using a blob object directly as link href
+    // https://blog.jayway.com/2017/07/13/open-pdf-downloaded-api-javascript/
+    if (window.navigator && window.navigator.msSaveOrOpenBlob) { // IE
+      downloadAnchor.onclick = function() {
+        window.navigator.msSaveOrOpenBlob(received);
+      };
+    } else
+      downloadAnchor.href = URL.createObjectURL(received);
 
     const bitrate = Math.round(receivedSize * 8 /
       ((new Date()).getTime() - timestampStart));
@@ -214,23 +230,37 @@ function onReceiveMessageCallback(event) {
   }
 }
 
-function onSendChannelStateChange() {
+async function checkStateAndSendData() {
+  if(sendingData)
+    return;
+  if (!sendChannel || !receiveChannel)
+    return;
+  const sendChannelReadyState = sendChannel.readyState;
+  const receiveChannelReadyState = receiveChannel.readyState;
+  console.log(`checkStateAndSendData ; Send channel state : ${sendChannelReadyState},
+    Receive channel state : ${receiveChannelReadyState}`);
+  if (sendChannelReadyState !== 'open' || receiveChannelReadyState !== 'open')
+    return;
+
+  sendingData = true;
+  timestampStart = (new Date()).getTime();
+  timestampPrev = timestampStart;
+  statsInterval = setInterval(displayStats, 500);
+  await displayStats();
+
+  sendData();
+}
+
+async function onSendChannelStateChange() {
   const readyState = sendChannel.readyState;
   console.log(`Send channel state is: ${readyState}`);
-  if (readyState === 'open') {
-    sendData();
-  }
+  await checkStateAndSendData();
 }
 
 async function onReceiveChannelStateChange() {
   const readyState = receiveChannel.readyState;
   console.log(`Receive channel state is: ${readyState}`);
-  if (readyState === 'open') {
-    timestampStart = (new Date()).getTime();
-    timestampPrev = timestampStart;
-    statsInterval = setInterval(displayStats, 500);
-    await displayStats();
-  }
+  await checkStateAndSendData();
 }
 
 // display bitrate statistics.
@@ -238,11 +268,12 @@ async function displayStats() {
   if (remoteConnection && remoteConnection.iceConnectionState === 'connected') {
     const stats = await remoteConnection.getStats();
     let activeCandidatePair;
-    stats.forEach(report => {
+    for (let i = 0; i < stats.length; i++) {
+      let report = stats[i];
       if (report.type === 'transport') {
         activeCandidatePair = stats.get(report.selectedCandidatePairId);
       }
-    });
+    }
     if (activeCandidatePair) {
       if (timestampPrev === activeCandidatePair.timestamp) {
         return;
