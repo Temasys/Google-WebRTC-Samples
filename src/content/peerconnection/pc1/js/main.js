@@ -18,8 +18,8 @@ callButton.addEventListener('click', call);
 hangupButton.addEventListener('click', hangup);
 
 let startTime;
-const localVideo = document.getElementById('localVideo');
-const remoteVideo = document.getElementById('remoteVideo');
+var localVideo = document.getElementById('localVideo');
+var remoteVideo = document.getElementById('remoteVideo');
 
 localVideo.addEventListener('loadedmetadata', function() {
   console.log(`Local video videoWidth: ${this.videoWidth}px,  videoHeight: ${this.videoHeight}px`);
@@ -62,7 +62,7 @@ async function start() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({audio: true, video: true});
     console.log('Received local stream');
-    localVideo.srcObject = stream;
+    localVideo = attachMediaStream(localVideo, stream);
     localStream = stream;
     callButton.disabled = false;
   } catch (e) {
@@ -93,13 +93,15 @@ async function call() {
   console.log('RTCPeerConnection configuration:', configuration);
   pc1 = new RTCPeerConnection(configuration);
   console.log('Created local peer connection object pc1');
-  pc1.addEventListener('icecandidate', e => onIceCandidate(pc1, e));
+  AdapterJS.addEvent(pc1, 'icecandidate', e => onIceCandidate(pc1, e));
   pc2 = new RTCPeerConnection(configuration);
   console.log('Created remote peer connection object pc2');
-  pc2.addEventListener('icecandidate', e => onIceCandidate(pc2, e));
-  pc1.addEventListener('iceconnectionstatechange', e => onIceStateChange(pc1, e));
-  pc2.addEventListener('iceconnectionstatechange', e => onIceStateChange(pc2, e));
-  pc2.addEventListener('track', gotRemoteStream);
+
+  AdapterJS.addEvent(pc2, 'icecandidate', e => onIceCandidate(pc2, e));
+  AdapterJS.addEvent(pc1, 'iceconnectionstatechange', e => onIceStateChange(pc1, e));
+  AdapterJS.addEvent(pc2, 'onIceStateChange', e => onIceStateChange(pc2, e));
+  AdapterJS.addEvent(pc2, 'track', gotRemoteStream);
+
 
   localStream.getTracks().forEach(track => pc1.addTrack(track, localStream));
   console.log('Added local stream to pc1');
@@ -161,7 +163,7 @@ function onSetSessionDescriptionError(error) {
 
 function gotRemoteStream(e) {
   if (remoteVideo.srcObject !== e.streams[0]) {
-    remoteVideo.srcObject = e.streams[0];
+     remoteVideo = attachMediaStream(remoteVideo, e.streams[0]);
     console.log('pc2 received remote stream');
   }
 }
